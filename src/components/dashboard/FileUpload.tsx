@@ -86,7 +86,9 @@ export const FileUpload: React.FC = () => {
       // Adiciona os novos dados (merge com existentes)
       await addNewData(newData);
 
-      await refreshData();
+      if (refreshData) {
+        await refreshData();
+      }
 
       setValidationResult({
         isValid: true,
