@@ -141,22 +141,13 @@ export const useGoogleSheets = (): UseGoogleSheetsReturn => {
   }, []);
 
   // Função para SUBSTITUIR os dados (upload de arquivo = substituição completa)
-  const mergeNewData = useCallback(async(newData: ActivityData[]) => {
+  const mergeNewData = useCallback((newData: ActivityData[]) => {
     // Upload de arquivo SUBSTITUI os dados existentes (não faz merge)
-    lastSyncedDataRef.current= '';
-    isInitialLoadRef.current = false;
-    
     console.log(`Substituindo dados: ${newData.length} registros do arquivo.`);
     
     // Atualiza o estado local
     setDataState(newData);
     
-    try{
-      await syncData([...newData]);
-      console.log("Dados sincronizados com sucesso após upload");
-    } catch(err) {
-      console.log("Erro ao sincronizar Dados.",err);
-    }
     // Sincroniza com o Sheets ANTES de atualizar o hash
     // (para que syncData não ache que os dados são idênticos)
     if (!isInitialLoadRef.current) {
