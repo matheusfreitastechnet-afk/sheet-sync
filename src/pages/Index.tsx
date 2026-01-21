@@ -31,7 +31,7 @@ const DashboardContent: React.FC = () => {
     <div className="min-h-screen bg-background">
       <Header />
       
-      <main className="max-w-[1400px] mx-auto p-8 space-y-8">
+      <main className="max-w-[auto] mx-auto p-8 space-y-8">
         {/* Status de sincronização */}
         {isSyncing && (
           <div className="alert alert-warning">
