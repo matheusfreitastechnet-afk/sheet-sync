@@ -173,16 +173,24 @@ export const Filters: React.FC = () => {
 
         <div className="form-group">
           <Label className="form-label">Produtividade</Label>
-          <select
-            className="form-control bg-card border border-border rounded-lg px-3 py-2 text-foreground w-full"
-            value={filters.productivityFilter}
-            onChange={(e) => setFilters({ productivityFilter: e.target.value as 'all' | 'productive' | 'unproductive' })}
-          >
-            {productivityOptions.map(opt => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
+
+          <div className="select-wrap">
+            <select
+              className="select-like-multiselect w-full"
+              value={filters.productivityFilter}
+              onChange={(e) =>
+                setFilters({
+                  productivityFilter: e.target.value as 'all' | 'productive' | 'unproductive'
+                })
+              }
+            >
+              {productivityOptions.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
         </div>
+
 
         <div className="form-group">
           <Label className="form-label">Data Inicial</Label>

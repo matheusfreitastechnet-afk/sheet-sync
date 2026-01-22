@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, Rea
 import { ActivityData, FilterState } from '@/types/activity';
 import { useGoogleSheets } from '@/hooks/useGoogleSheets';
 import { filterExcludedServiceTypes, parseBRDate, extractDateFromInterval, getActivityStatus } from '@/utils/activityHelpers';
-
+import { useAtividades } from '@/hooks/useAtividades';
 
 interface DashboardContextType {
   allData: ActivityData[];
@@ -32,6 +32,7 @@ const DashboardContext = createContext<DashboardContextType | undefined>(undefin
 
 export const DashboardProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { data, isLoading, isSyncing, error, fetchData, syncData, setData, mergeNewData } = useGoogleSheets();
+  // const { data, isLoading, isSyncing, error, fetchData, syncData, setData, mergeNewData } = useAtividades();
   const [filters, setFiltersState] = useState<FilterState>(initialFilters);
   const [filteredData, setFilteredData] = useState<ActivityData[]>([]);
 

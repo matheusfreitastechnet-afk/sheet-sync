@@ -414,6 +414,50 @@
     box-shadow: 0 0 0 3px rgba(234, 102, 164, 0.1);
   }
 
+  /* Select com o mesmo visual do multi-select */
+.select-like-multiselect {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+
+  background: hsl(var(--surface-light));
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+
+  padding: 0.75rem 2.5rem 0.75rem 1rem; /* espaço pra seta */
+  color: hsl(var(--foreground));
+  font-size: 0.9rem;
+  cursor: pointer;
+
+  min-height: 48px; /* igual multi-select-button */
+  transition: all 0.3s ease;
+}
+
+.select-like-multiselect:hover,
+.select-like-multiselect:focus {
+  outline: none;
+  border-color: hsl(var(--accent));
+  box-shadow: 0 0 0 3px rgba(234, 102, 164, 0.1);
+}
+
+/* wrapper pra desenhar a seta igual ao MultiSelect */
+.select-wrap {
+  position: relative;
+  z-index: 10;
+}
+
+.select-wrap::after {
+  content: "▼";
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: hsl(var(--muted-foreground));
+  font-size: 0.8rem;
+}
+
+
   .multi-select-dropdown {
     position: absolute;
     top: calc(100% + 6px);
