@@ -18,10 +18,14 @@ export const Header: React.FC = () => {
     <header className="bg-surface border-b border-border sticky top-0 z-50 backdrop-blur-xl">
       <div className="max-w-[1400px] mx-auto px-8 py-6 flex justify-between items-center">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-gradient-primary rounded-xl flex items-center justify-center shadow-glow">
-            {/* <img src="../../public/logo.png" alt="logo" className="w-6 h-6"/> */}
-            <Activity className="w-6 h-6 text-black" />
+         <div className="w-20 h-20  rounded-xl flex items-center justify-center shadow-glow overflow-hidden">
+           <img
+            src={`${import.meta.env.BASE_URL}LogoNovo.png`}
+            alt="Logo Technet"
+            className="w-full h-full object-contain"
+          />
           </div>
+
           <div>
             <h1 className="text-2xl font-extrabold text-foreground">
               Dashboard Technet 
