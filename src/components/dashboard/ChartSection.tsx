@@ -111,6 +111,13 @@ export const ChartSection: React.FC = () => {
       </div>
     );
   }
+  const tooltipStyle = {
+  backgroundColor: 'hsl(var(--card))',
+  border: '1px solid hsl(var(--border))',
+  borderRadius: '8px',
+  color: 'hsl(var(--foreground))',
+  boxShadow: '0 10px 30px rgba(0,0,0,0.15)',
+};
 
   return (
     <div className="space-y-6">
@@ -122,6 +129,7 @@ export const ChartSection: React.FC = () => {
             Atendimentos por Técnico
           </h4>
           <div className="h-[300px]">
+            
             <ResponsiveContainer width="100%" height="100%">
               <BarChart 
                 data={technicianData} 
@@ -136,12 +144,7 @@ export const ChartSection: React.FC = () => {
                   width={95}
                 />
                 <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(231 45% 11%)', 
-                    border: '1px solid hsl(232 32% 22%)',
-                    borderRadius: '8px',
-                    color: 'white'
-                  }}
+                  contentStyle={tooltipStyle}
                   formatter={(value, name, props) => [
                     `${value} (${props.payload.productivity}%)`,
                     'Atendimentos'
@@ -179,12 +182,7 @@ export const ChartSection: React.FC = () => {
                   width={115}
                 />
                 <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(231 45% 11%)', 
-                    border: '1px solid hsl(232 32% 22%)',
-                    borderRadius: '8px',
-                    color: 'white'
-                  }}
+                  contentStyle={tooltipStyle}
                   labelFormatter={(label, payload) => payload[0]?.payload?.fullName || label}
                 />
                 <Bar dataKey="value" fill="#43e97b" radius={[0, 4, 4, 0]}>
@@ -224,12 +222,7 @@ export const ChartSection: React.FC = () => {
                 />
                 <YAxis tick={{ fill: 'hsl(223 16% 70%)', fontSize: 11 }} />
                 <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(231 45% 11%)', 
-                    border: '1px solid hsl(232 32% 22%)',
-                    borderRadius: '8px',
-                    color: 'white'
-                  }}
+                  contentStyle={tooltipStyle}
                 />
                 <Area 
                   type="monotone" 

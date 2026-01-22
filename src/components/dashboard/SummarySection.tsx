@@ -94,7 +94,7 @@ export const SummarySection: React.FC = () => {
     <div className="summary-grid">
       <SummaryCard 
         title="Atividades por Tipo" 
-        icon={<ListTree className="w-5 h-5" />}
+        icon={<ListTree className="w-5 h-5 align-middle"/>}
         iconColor="var(--accent)"
       >
         <ul className="summary-list">

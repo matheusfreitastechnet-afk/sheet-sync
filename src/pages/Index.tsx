@@ -33,12 +33,12 @@ const DashboardContent: React.FC = () => {
       
       <main className="max-w-[auto] mx-auto p-8 space-y-8">
         {/* Status de sincronização */}
-        {isSyncing && (
+        {/* {isSyncing && (
           <div className="alert alert-warning">
             <div className="spinner" style={{ width: 20, height: 20, margin: 0 }} />
             <span>Sincronizando dados com Google Sheets...</span>
           </div>
-        )}
+        )} */}
 
         {/* Erro */}
         {error && (

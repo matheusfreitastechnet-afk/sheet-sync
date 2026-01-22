@@ -13,7 +13,7 @@ interface ProductivityItemProps {
 
 const ProductivityItem: React.FC<ProductivityItemProps> = ({ name, count, percentage }) => {
   const colorClass = percentage >= 80 ? 'text-success' : percentage < 40 ? 'text-danger' : 'text-warning';
-  
+
   return (
     <li className="productivity-item">
       <span className="name">
@@ -66,23 +66,26 @@ export const ProductivitySection: React.FC = () => {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [selectedActivity, setSelectedActivity] = useState<string | null>(null);
 
+  // ✅ controla quando o mouse está em cima do gráfico (pra esconder o texto central)
+  const [isPieHover, setIsPieHover] = useState(false);
+
   // Calcula produtividade filtrada pelo tipo de atividade selecionado no pie chart
   const dataForProductivity = useMemo(() => {
     if (!selectedActivity) return filteredData;
-    return filteredData.filter(item => 
+    return filteredData.filter(item =>
       (item['Tipo de Atividade'] || '') === selectedActivity
     );
   }, [filteredData, selectedActivity]);
 
-  const techProductivity = useMemo(() => 
-    calculateTechnicianProductivity(dataForProductivity), 
+  const techProductivity = useMemo(() =>
+    calculateTechnicianProductivity(dataForProductivity),
     [dataForProductivity]
   );
 
   const topTechnicians = techProductivity.slice(0, 5);
   const bottomTechnicians = techProductivity.slice(-5).reverse();
 
-  const uniqueTechnicians = useMemo(() => 
+  const uniqueTechnicians = useMemo(() =>
     new Set(dataForProductivity.map(item => item.Recurso).filter(Boolean)).size,
     [dataForProductivity]
   );
@@ -90,16 +93,16 @@ export const ProductivitySection: React.FC = () => {
   // Dados para gráfico de pizza - POR TIPO DE SERVIÇO (como no original)
   const pieData = useMemo(() => {
     const counts: Record<string, { total: number; productive: number }> = {};
-    
+
     filteredData.forEach(item => {
       const type = item['Tipo de Atividade'] || 'Não Informado';
       const typeLower = type.toLowerCase().trim();
-      
+
       // Ignora tipos específicos
       if (IGNORE_LIST.some(ignored => typeLower.includes(ignored))) return;
-      
+
       const isProductive = getActivityStatus(item) === 'Produtiva';
-      
+
       if (!counts[type]) {
         counts[type] = { total: 0, productive: 0 };
       }
@@ -124,12 +127,12 @@ export const ProductivitySection: React.FC = () => {
   const overallStats = useMemo(() => {
     let totalAll = 0;
     let totalProductive = 0;
-    
+
     pieData.forEach(item => {
       totalAll += item.value;
       totalProductive += item.productive;
     });
-    
+
     return {
       total: totalAll,
       productive: totalProductive,
@@ -150,11 +153,6 @@ export const ProductivitySection: React.FC = () => {
     }
   };
 
-  // Handler para clique fora (reseta seleção)
-  const handlePieMouseLeave = () => {
-    // Não reseta ao sair, apenas ao clicar novamente ou clicar fora do gráfico
-  };
-
   // Info text baseado na seleção
   const infoText = useMemo(() => {
     if (selectedActivity) {
@@ -168,14 +166,14 @@ export const ProductivitySection: React.FC = () => {
 
   const activitySummary = useMemo(() => {
     const results: Record<string, { total: number; productive: number }> = {};
-    
+
     TARGET_ACTIVITIES.forEach(activity => {
       results[activity] = { total: 0, productive: 0 };
     });
 
     filteredData.forEach(row => {
       const rowActivity = String(row['Tipo de Atividade'] || '').toUpperCase();
-      
+
       for (const activity of TARGET_ACTIVITIES) {
         if (rowActivity.includes(activity)) {
           results[activity].total++;
@@ -200,7 +198,7 @@ export const ProductivitySection: React.FC = () => {
   const topChartData = useMemo(() => {
     const top5 = topTechnicians;
     let podiumOrder: number[] = [];
-    
+
     if (top5.length === 5) podiumOrder = [3, 1, 0, 2, 4];
     else if (top5.length === 4) podiumOrder = [3, 1, 0, 2];
     else if (top5.length === 3) podiumOrder = [1, 0, 2];
@@ -209,7 +207,7 @@ export const ProductivitySection: React.FC = () => {
 
     return podiumOrder
       .filter(index => top5[index])
-      .map((index, i) => ({
+      .map((index) => ({
         name: top5[index].name.split(' ')[0],
         value: top5[index].productiveCount,
         productivity: top5[index].productivity,
@@ -218,7 +216,7 @@ export const ProductivitySection: React.FC = () => {
   }, [topTechnicians]);
 
   // Dados do gráfico de barras para Bottom 5
-  const bottomChartData = useMemo(() => 
+  const bottomChartData = useMemo(() =>
     bottomTechnicians.map(tech => ({
       name: tech.name.split(' ')[0],
       value: tech.productiveCount,
@@ -227,6 +225,14 @@ export const ProductivitySection: React.FC = () => {
     })),
     [bottomTechnicians]
   );
+
+  const tooltipStyle = {
+    backgroundColor: 'hsl(var(--card))',
+    border: '1px solid hsl(var(--border))',
+    borderRadius: '8px',
+    color: 'hsl(var(--foreground))',
+    boxShadow: '0 10px 30px rgba(0,0,0,0.15)',
+  };
 
   return (
     <div className="space-y-6">
@@ -239,18 +245,18 @@ export const ProductivitySection: React.FC = () => {
         <div className="kpi-grid">
           {TARGET_ACTIVITIES.map(activity => {
             const data = activitySummary[activity];
-            const productivityRate = data.total > 0 
+            const productivityRate = data.total > 0
               ? ((data.productive / data.total) * 100).toFixed(1)
               : '0.0';
             const config = activityCardConfig[activity];
-            
+
             return (
               <div key={activity} className="kpi-card">
                 <div className="kpi-header" style={{ width: '100%', alignItems: 'flex-end' }}>
                   <div style={{ flexGrow: 1 }}>
-                    <div 
-                      className="kpi-value" 
-                      style={{ 
+                    <div
+                      className="kpi-value"
+                      style={{
                         background: `linear-gradient(135deg, ${config.color} 0%, rgba(0, 0, 0, 0) 100%)`,
                         WebkitBackgroundClip: 'text',
                         WebkitTextFillColor: 'transparent',
@@ -267,20 +273,20 @@ export const ProductivitySection: React.FC = () => {
                     <span className="text-2xl">{config.icon}</span>
                   </div>
                 </div>
-                <div style={{ 
-                  paddingTop: '10px', 
-                  borderTop: '1px solid var(--border)', 
-                  display: 'flex', 
-                  justifyContent: 'space-between', 
-                  fontSize: '0.9rem', 
-                  marginTop: '15px' 
+                <div style={{
+                  paddingTop: '10px',
+                  borderTop: '1px solid var(--border)',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  fontSize: '0.9rem',
+                  marginTop: '15px'
                 }}>
                   <span style={{ color: 'var(--text-secondary)' }}>
                     Produtivas: <strong style={{ color: 'var(--text-primary)' }}>{data.productive.toLocaleString('pt-BR')}</strong>
                   </span>
-                  <span style={{ 
-                    fontWeight: 700, 
-                    color: parseFloat(productivityRate) >= 80 ? '#43e97b' : '#f5576c' 
+                  <span style={{
+                    fontWeight: 700,
+                    color: parseFloat(productivityRate) >= 80 ? '#43e97b' : '#f5576c'
                   }}>
                     {productivityRate}%
                   </span>
@@ -299,9 +305,13 @@ export const ProductivitySection: React.FC = () => {
             <PieChart className="w-5 h-5 text-accent" />
             Distribuição por Tipo de Serviço
           </h4>
+
           <div className="h-[250px] relative">
             <ResponsiveContainer width="100%" height="100%">
-              <RechartsPie>
+              <RechartsPie
+                onMouseEnter={() => setIsPieHover(true)}
+                onMouseLeave={() => setIsPieHover(false)}
+              >
                 <Pie
                   data={pieData}
                   cx="50%"
@@ -316,20 +326,16 @@ export const ProductivitySection: React.FC = () => {
                   style={{ cursor: 'pointer' }}
                 >
                   {pieData.map((entry, index) => (
-                    <Cell 
-                      key={`cell-${index}`} 
+                    <Cell
+                      key={`cell-${index}`}
                       fill={entry.color}
                       opacity={selectedActivity && selectedActivity !== entry.name ? 0.4 : 1}
                     />
                   ))}
                 </Pie>
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(231 45% 11%)', 
-                    border: '1px solid hsl(232 32% 22%)',
-                    borderRadius: '8px',
-                    color: 'white'
-                  }}
+
+                <Tooltip
+                  contentStyle={tooltipStyle}
                   formatter={(value: number, name: string, props: any) => [
                     `${value} OS (${props.payload.productivity.toFixed(1)}% prod.)`,
                     name
@@ -337,8 +343,9 @@ export const ProductivitySection: React.FC = () => {
                 />
               </RechartsPie>
             </ResponsiveContainer>
-            {/* Center text quando não há seleção */}
-            {activeIndex === null && (
+
+            {/* ✅ Center text só aparece quando NÃO estiver com hover/tooltip ativo */}
+            {!isPieHover && activeIndex === null && (
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none" style={{ top: '-10px' }}>
                 <span className="text-2xl font-bold" style={{ color: '#43e97b' }}>
                   {overallStats.productivity.toFixed(0)}%
@@ -347,10 +354,11 @@ export const ProductivitySection: React.FC = () => {
               </div>
             )}
           </div>
+
           {/* Info text */}
-          <div 
+          <div
             className="text-center text-sm mt-2 p-2 rounded-lg cursor-pointer transition-all"
-            style={{ 
+            style={{
               background: selectedActivity ? 'rgba(102, 126, 234, 0.2)' : 'transparent',
               border: selectedActivity ? '1px solid rgba(102, 126, 234, 0.3)' : '1px solid transparent'
             }}
@@ -377,7 +385,7 @@ export const ProductivitySection: React.FC = () => {
             {uniqueTechnicians}
           </div>
           <div className="text-muted-foreground mt-2 text-sm">
-            {selectedActivity 
+            {selectedActivity
               ? `Técnicos em "${selectedActivity.substring(0, 15)}..."`
               : 'Técnicos únicos no filtro atual'
             }
@@ -412,13 +420,8 @@ export const ProductivitySection: React.FC = () => {
                 <BarChart data={topChartData} layout="horizontal">
                   <XAxis dataKey="name" tick={{ fill: 'hsl(223 16% 70%)', fontSize: 10 }} />
                   <YAxis hide />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'hsl(231 45% 11%)', 
-                      border: '1px solid hsl(232 32% 22%)',
-                      borderRadius: '8px',
-                      color: 'white'
-                    }}
+                  <Tooltip
+                    contentStyle={tooltipStyle}
                     formatter={(value, name, props) => [
                       `${props.payload.productivity.toFixed(1)}%`,
                       'Produtividade'
@@ -463,14 +466,7 @@ export const ProductivitySection: React.FC = () => {
                 <BarChart data={bottomChartData} layout="horizontal">
                   <XAxis dataKey="name" tick={{ fill: 'hsl(223 16% 70%)', fontSize: 10 }} />
                   <YAxis hide />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'hsl(231 45% 11%)', 
-                      border: '1px solid hsl(232 32% 22%)',
-                      borderRadius: '8px',
-                      color: 'white'
-                    }}
-                  />
+                  <Tooltip contentStyle={tooltipStyle} />
                   <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                     {bottomChartData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
