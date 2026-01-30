@@ -3,7 +3,6 @@ import { Trophy, Frown, Users, ListChecks, PieChart } from 'lucide-react';
 import { PieChart as RechartsPie, Pie, Cell, ResponsiveContainer, Tooltip, Sector } from 'recharts';
 import { useDashboard } from '@/contexts/DashboardContext';
 import { calculateTechnicianProductivity, getActivityStatus } from '@/utils/activityHelpers';
-import { TARGET_ACTIVITIES } from '@/config/constants';
 import { DraggableBarChart } from './DraggableBarChart';
 
 interface ProductivityItemProps {
@@ -30,6 +29,14 @@ const ProductivityItem: React.FC<ProductivityItemProps> = ({ name, count, percen
 
 // Lista de tipos de atividade a ignorar no gráfico de pizza
 const IGNORE_LIST = ['na base', 'refeicao', 'refeição', 'intervalo', 'não informado'];
+
+// Servi?os principais (ordem fixa para os slots)
+const PRIMARY_SERVICES = [
+  { key: 'INST GPON - INST CABO', label: 'INST. GPON/CABO' },
+  { key: 'INSTALACAO', label: 'INSTALACAO' },
+  { key: 'MUDANCA DE PACOTE', label: 'MUDANCA DE PACOTE' }
+];
+
 
 // Cores para o gráfico de pizza
 const PIE_COLORS = ['#4facfe', '#764ba2', '#f093fb', '#f5576c', '#00f2fe', '#43e97b', '#38ef7d', '#ff6b6b', '#ffc107', '#17a2b8'];
@@ -165,34 +172,119 @@ export const ProductivitySection: React.FC = () => {
     return `Total de OS: ${overallStats.total}`;
   }, [selectedActivity, pieData, overallStats]);
 
-  const activitySummary = useMemo(() => {
+  const activitySummaryAll = useMemo(() => {
     const results: Record<string, { total: number; productive: number }> = {};
 
-    TARGET_ACTIVITIES.forEach(activity => {
-      results[activity] = { total: 0, productive: 0 };
+    // Estat?stica por tipo de atividade (exato)
+    filteredData.forEach(row => {
+      const type = String(row['Tipo de Atividade'] || 'N?o Informado');
+      const typeLower = type.toLowerCase().trim();
+      if (IGNORE_LIST.some(ignored => typeLower.includes(ignored))) return;
+
+      if (!results[type]) {
+        results[type] = { total: 0, productive: 0 };
+      }
+      results[type].total++;
+      if (getActivityStatus(row) === 'Produtiva') {
+        results[type].productive++;
+      }
+    });
+
+    // Garante contagem consistente para os servi?os principais (por "includes")
+    const primaryStats: Record<string, { total: number; productive: number }> = {};
+    PRIMARY_SERVICES.forEach(service => {
+      primaryStats[service.key] = { total: 0, productive: 0 };
     });
 
     filteredData.forEach(row => {
       const rowActivity = String(row['Tipo de Atividade'] || '').toUpperCase();
-
-      for (const activity of TARGET_ACTIVITIES) {
-        if (rowActivity.includes(activity)) {
-          results[activity].total++;
+      for (const service of PRIMARY_SERVICES) {
+        if (rowActivity.includes(service.key)) {
+          primaryStats[service.key].total++;
           if (getActivityStatus(row) === 'Produtiva') {
-            results[activity].productive++;
+            primaryStats[service.key].productive++;
           }
           break;
         }
       }
     });
 
+    PRIMARY_SERVICES.forEach(service => {
+      results[service.key] = primaryStats[service.key];
+    });
+
     return results;
   }, [filteredData]);
+
+  const productivityByActivity = useMemo(() => {
+    const map: Record<string, number> = {};
+    Object.entries(activitySummaryAll).forEach(([name, data]) => {
+      const rate = data.total > 0 ? (data.productive / data.total) * 100 : 0;
+      map[name] = rate;
+    });
+    return map;
+  }, [activitySummaryAll]);
+
+  const finalActivities = useMemo(() => {
+    const isZero = (value: unknown) =>
+      value === 0 || value === null || value === undefined || value === '' || Number.isNaN(value as number);
+
+    const used = new Set<string>();
+    const slots = PRIMARY_SERVICES.map(service => {
+      const productivity = productivityByActivity[service.key];
+      if (isZero(productivity)) return null;
+      used.add(service.key);
+      return service.key;
+    });
+
+    const candidates = Object.keys(productivityByActivity)
+      .sort((a, b) => (productivityByActivity[b] || 0) - (productivityByActivity[a] || 0));
+
+    const positiveCandidates = candidates.filter(name => (productivityByActivity[name] || 0) > 0);
+
+    let posIndex = 0;
+    let allIndex = 0;
+
+    for (let i = 0; i < slots.length; i++) {
+      if (slots[i]) continue;
+
+      while (posIndex < positiveCandidates.length && used.has(positiveCandidates[posIndex])) {
+        posIndex++;
+      }
+      if (posIndex < positiveCandidates.length) {
+        const pick = positiveCandidates[posIndex++];
+        used.add(pick);
+        slots[i] = pick;
+        continue;
+      }
+
+      while (allIndex < candidates.length && used.has(candidates[allIndex])) {
+        allIndex++;
+      }
+      if (allIndex < candidates.length) {
+        const pick = candidates[allIndex++];
+        used.add(pick);
+        slots[i] = pick;
+      }
+    }
+
+    return slots.filter(Boolean) as string[];
+  }, [productivityByActivity]);
 
   const activityCardConfig: Record<string, { icon: string; color: string }> = {
     'MUDANCA DE PACOTE': { icon: '🔄', color: '#ffc107' },
     'INSTALACAO': { icon: '🔌', color: '#17a2b8' },
     'INST GPON - INST CABO': { icon: '🔧', color: '#28a745' }
+  };
+
+  const getActivityConfig = (activity: string, index: number) => {
+    if (activityCardConfig[activity]) return activityCardConfig[activity];
+    return { icon: '*', color: PIE_COLORS[index % PIE_COLORS.length] };
+  };
+
+  const getActivityLabel = (activity: string) => {
+    const primary = PRIMARY_SERVICES.find(service => service.key === activity);
+    return primary ? primary.label : activity;
   };
 
   // Dados do gráfico de barras para Top 5 - estilo pódio
@@ -237,12 +329,12 @@ export const ProductivitySection: React.FC = () => {
           Resumo de Atividades Chave
         </h3>
         <div className="kpi-grid">
-          {TARGET_ACTIVITIES.map(activity => {
-            const data = activitySummary[activity];
+          {finalActivities.map((activity, index) => {
+            const data = activitySummaryAll[activity] || { total: 0, productive: 0 };
             const productivityRate = data.total > 0
               ? ((data.productive / data.total) * 100).toFixed(1)
               : '0.0';
-            const config = activityCardConfig[activity];
+            const config = getActivityConfig(activity, index);
 
             return (
               <div key={activity} className="kpi-card">
@@ -260,7 +352,7 @@ export const ProductivitySection: React.FC = () => {
                       {data.total.toLocaleString('pt-BR')}
                     </div>
                     <div className="kpi-label" style={{ textTransform: 'none', fontSize: '1rem', color: 'var(--text-primary)', marginTop: '5px' }}>
-                      {activity.replace('INST GPON - INST CABO', 'INST. GPON/CABO')}
+                      {getActivityLabel(activity)}
                     </div>
                   </div>
                   <div className="kpi-icon" style={{ background: config.color, opacity: 0.8 }}>
