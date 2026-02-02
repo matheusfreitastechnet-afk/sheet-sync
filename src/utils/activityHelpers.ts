@@ -7,7 +7,7 @@ export const getActivityStatus = (item: ActivityData): ActivityStatus => {
   
   if (match) {
     const code = parseInt(match[1], 10);
-    if (code >= 408) {
+    if (code >= 409) {
       return 'Produtiva';
     } else {
       return 'Improdutiva';
