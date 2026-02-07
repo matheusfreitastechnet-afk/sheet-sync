@@ -31,6 +31,8 @@ export const SummarySection: React.FC = () => {
   const activityCounts = useMemo(() => {
     const counts = calculateActivityCounts(filteredData);
     return Object.entries(counts)
+       // Exclui o tipo "Normal" da lista
+      .filter(([type]) => type.toLowerCase() !== 'normal')   
       .sort((a, b) => b[1].total - a[1].total)
       .slice(0, 10);
   }, [filteredData]);

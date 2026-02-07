@@ -80,6 +80,7 @@ export const FileUpload = React.forwardRef<HTMLDivElement>((_, ref) => {
   /**
    * Processa 1 arquivo com progresso por linhas
    * - Filtra Status da Atividade = "suspenso"
+   * - Mantém SOMENTE a 2ª coluna duplicada "Tipo de Atividade" (ignora a 1ª)
    * - Permite cancelamento
    */
   const processFileWithProgress = useCallback(
@@ -102,17 +103,48 @@ export const FileUpload = React.forwardRef<HTMLDivElement>((_, ref) => {
         throw new Error('O arquivo deve conter pelo menos uma linha de cabeçalho e uma linha de dados.');
       }
 
-      const headers = (jsonData[0] as string[]).map(h => String(h || '').trim());
-      const validation = validateHeaders(headers);
+      // ====== AQUI: lógica para usar SOMENTE a 2ª coluna "Tipo de Atividade" ======
+      const rawHeaders = (jsonData[0] as string[]).map(h => String(h || '').trim());
 
+      // encontra todas ocorrências de "Tipo de Atividade"
+      const tipoAtividadeIndices: number[] = [];
+      rawHeaders.forEach((header, index) => {
+        if (String(header || '').trim().toLowerCase() === 'tipo de atividade') {
+          tipoAtividadeIndices.push(index);
+        }
+      });
+
+      // preferida = segunda ocorrência; se não existir, usa a primeira (se existir)
+      const tipoAtividadePreferredIndex =
+        tipoAtividadeIndices.length >= 2 ? tipoAtividadeIndices[1] : tipoAtividadeIndices[0];
+
+      // headers finais: marca duplicatas (não preferidas) para ignorar
+      const headers = rawHeaders.map((header, index) => {
+        const normalized = String(header || '').trim();
+        const isTipoAtividade = normalized.toLowerCase() === 'tipo de atividade';
+
+        if (
+          isTipoAtividade &&
+          tipoAtividadeIndices.length > 1 &&
+          index !== tipoAtividadePreferredIndex
+        ) {
+          return `__IGNORE_${index}__`;
+        }
+
+        return normalized;
+      });
+
+      // valida com base nos headers originais (sem __IGNORE_)
+      const validation = validateHeaders(rawHeaders);
       if (!validation.isValid) {
         throw new Error(`Colunas ausentes: ${validation.missing.join(', ')}`);
       }
+      // =======================================================================
 
       const dataRows = jsonData.slice(1);
       const total = dataRows.length;
 
-      const statusHeader = headers.find(h => h.toLowerCase().trim() === 'status da atividade');
+      const statusHeader = rawHeaders.find(h => h.toLowerCase().trim() === 'status da atividade');
       const startPct = 22;
       const endPct = 95;
 
@@ -128,6 +160,9 @@ export const FileUpload = React.forwardRef<HTMLDivElement>((_, ref) => {
           const obj: ActivityData = {};
 
           headers.forEach((header, index) => {
+            // ignora colunas marcadas como duplicatas
+            if (String(header).startsWith('__IGNORE_')) return;
+
             obj[header] =
               (row as unknown[])[index] !== undefined ? String((row as unknown[])[index] || '') : '';
           });
